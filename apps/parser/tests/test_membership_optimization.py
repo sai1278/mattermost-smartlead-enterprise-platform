@@ -43,7 +43,7 @@ def test_lazy_memberships_mapping_interface() -> None:
         ]
     }
     channel_members = {("team-1", "private-c"): {"user-1"}}
-    channel_owners = {("team-1", "private-c"): set()}
+    channel_owners: dict[tuple[str, str], set[str]] = {("team-1", "private-c"): set()}
 
     memberships = _LazyMemberships(
         user_to_teams=user_to_teams,

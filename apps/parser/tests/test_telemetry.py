@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from pathlib import Path
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -25,17 +27,20 @@ class _InMemorySource:
     def __init__(self, export: TeamsExport) -> None:
         self._export = export
 
-    def iter_teams(self) -> any:
+    def iter_teams(self) -> Iterator[Any]:
         return iter(self._export.teams)
 
-    def iter_users(self) -> any:
+    def iter_users(self) -> Iterator[Any]:
         return iter(self._export.users)
 
-    def iter_direct_channels(self) -> any:
+    def iter_direct_channels(self) -> Iterator[Any]:
         return iter(self._export.direct_channels)
 
     def input_size_bytes(self) -> int:
         return 100
+
+    def materialize(self) -> TeamsExport:
+        return self._export
 
     def validate_schema_version(self) -> None:
         pass
@@ -43,9 +48,9 @@ class _InMemorySource:
 
 class _InMemoryWriter:
     def __init__(self) -> None:
-        self.records = []
+        self.records: list[Mapping[str, Any]] = []
 
-    def write_record(self, record) -> None:
+    def write_record(self, record: Mapping[str, Any]) -> None:
         self.records.append(record)
 
     def flush(self) -> None:
@@ -106,6 +111,7 @@ def test_opentelemetry_pipeline_spans(tmp_path: Path) -> None:
 
     # Check root span attributes
     root_span = next(span for span in spans if span.name == "migration_pipeline_run")
+    assert root_span.attributes is not None
     assert root_span.attributes["correlation_id"] == "test-correlation-123"
     assert root_span.attributes["bytes_processed"] == 100
     assert root_span.status.is_ok

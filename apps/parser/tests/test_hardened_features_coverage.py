@@ -377,7 +377,7 @@ def test_services_concurrent_attachment_download_failure(
             raise ValueError("Simulated concurrent failure")
         return original_process(*args, **kwargs)
 
-    service._process_attachment = mock_process  # type: ignore[assignment]
+    service._process_attachment = mock_process  # type: ignore[method-assign]
 
     monkeypatch.setattr(
         "teams_mattermost_migration_parser.application.services.time.sleep",

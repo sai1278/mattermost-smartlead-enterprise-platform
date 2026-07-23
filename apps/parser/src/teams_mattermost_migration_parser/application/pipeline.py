@@ -13,7 +13,7 @@ import types
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from opentelemetry import trace
 
@@ -187,8 +187,8 @@ class TransformationPipeline:
             LOGGER.warning(f"Received signal {signum}, requesting graceful shutdown...")
             self._shutdown_requested = True
 
-        old_term: signal.Handlers = signal.SIG_DFL
-        old_int: signal.Handlers = signal.SIG_DFL
+        old_term: Any = signal.SIG_DFL
+        old_int: Any = signal.SIG_DFL
         try:
             try:
                 old_term = signal.signal(signal.SIGTERM, handle_signal)
