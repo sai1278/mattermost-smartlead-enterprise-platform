@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "changelog-path": "CHANGELOG.md",
+      "version-file": "VERSION"
+    }
+  },
+  "branches": [
+    {
+      "branch": "main",
+      "prerelease": false
+    },
+    {
+      "branch": "develop",
+      "prerelease": true,
+      "prerelease-type": "dev"
+    }
+  ],
+  "commit-message-pattern": "chore(release)${component}:? ${version}"
+}
