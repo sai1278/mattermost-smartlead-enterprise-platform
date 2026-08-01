@@ -19,6 +19,9 @@ src = [
   "apps/parser/tests",
   "tests",
 ]
+exclude = [
+  "docs/archive",
+]
 
 [tool.ruff.lint]
 select = [
