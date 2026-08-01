@@ -1,0 +1,26 @@
+groups:
+  - name: tmmp_chaos_alerts
+    rules:
+      - alert: ServiceLatencySLOBreach
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, service)) > 0.2
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "95th percentile latency breached 200ms SLO"
+
+      - alert: CircuitBreakerTripped
+        expr: tmmp_circuit_breaker_state == 1
+        for: 0s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Circuit breaker entered OPEN state during failover"
+
+      - alert: HighErrorRateDetected
+        expr: sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m])) > 0.01
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Error rate exceeded 1% threshold"

@@ -36,7 +36,7 @@ PYTHONPATH="${PROJECT_ROOT}/apps/parser/src" python3 -m teams_mattermost_migrati
 if [[ -f "${OUTPUT_PATH}" ]]; then
   chmod 600 "${OUTPUT_PATH}"
 fi
-# Also chmod any chunk part files
+# Also chmod any chunk part files and output zip package
 base_dir="$(dirname "${OUTPUT_PATH}")"
 base_name="$(basename "${OUTPUT_PATH}")"
 stem="${base_name%.*}"
@@ -47,5 +47,8 @@ for part_file in "${base_dir}/${stem}.part"*".${ext}"; do
     chmod 600 "${part_file}"
   fi
 done
+if [[ -f "${base_dir}/${stem}.zip" ]]; then
+  chmod 600 "${base_dir}/${stem}.zip"
+fi
 
 log_ok "Generated import payload at ${OUTPUT_PATH}."

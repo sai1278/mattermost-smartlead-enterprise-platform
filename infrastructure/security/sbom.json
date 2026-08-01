@@ -1,0 +1,69 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "name": "teams-mattermost-migration",
+      "version": "1.0.0",
+      "type": "platform"
+    }
+  },
+  "components": [
+    {
+      "name": "tmmp-integrations-shared",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-integrations-shared@0.1.0"
+    },
+    {
+      "name": "tmmp-integrations-mattermost",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-integrations-mattermost@0.1.0"
+    },
+    {
+      "name": "tmmp-integrations-smartlead",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-integrations-smartlead@0.1.0"
+    },
+    {
+      "name": "tmmp-integrations-clickhouse",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-integrations-clickhouse@0.1.0"
+    },
+    {
+      "name": "tmmp-integrations-flowable",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-integrations-flowable@0.1.0"
+    },
+    {
+      "name": "tmmp-smartlead-sync",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-smartlead-sync@0.1.0"
+    },
+    {
+      "name": "tmmp-command-handler",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-command-handler@0.1.0"
+    },
+    {
+      "name": "tmmp-bot",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-bot@0.1.0"
+    },
+    {
+      "name": "tmmp-analytics",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-analytics@0.1.0"
+    },
+    {
+      "name": "tmmp-workflow-engine",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/tmmp-workflow-engine@0.1.0"
+    },
+    {
+      "name": "teams-mattermost-migration-parser",
+      "version": "0.1.0",
+      "purl": "pkg:pypi/teams-mattermost-migration-parser@0.1.0"
+    }
+  ]
+}

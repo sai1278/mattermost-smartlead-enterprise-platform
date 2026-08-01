@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "tmmp-microservices"
+    static_configs:
+      - targets:
+          - "command-handler:8000"
+          - "smartlead-sync:8001"
+          - "bot:8002"
+          - "analytics:8003"
+          - "workflow-engine:8004"

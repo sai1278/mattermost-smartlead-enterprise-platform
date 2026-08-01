@@ -1,0 +1,17 @@
+rules:
+  - id: python-no-hardcoded-secrets
+    patterns:
+      - pattern-either:
+          - pattern: $SECRET = "..."
+          - pattern: $TOKEN = "..."
+    message: "Potential hardcoded secret or token detected."
+    languages: [python]
+    severity: ERROR
+
+  - id: python-prevent-ssrf-unsafe-http
+    patterns:
+      - pattern: httpx.get($URL, ...)
+      - pattern-not: httpx.get(..., timeout=...)
+    message: "HTTP requests must enforce explicit timeout settings to prevent SSRF resource exhaustion."
+    languages: [python]
+    severity: WARNING

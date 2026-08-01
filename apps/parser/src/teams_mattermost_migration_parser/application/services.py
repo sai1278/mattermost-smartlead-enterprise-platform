@@ -254,11 +254,7 @@ class _LazyMemberships(Mapping[str, dict[str, Any]]):
                 c_owners = self._channel_owners.get((t_name, c_name), set())
                 c_members = self._channel_members.get((t_name, c_name), set())
 
-                belongs = (
-                    not channel.is_private
-                    or key in c_owners
-                    or key in c_members
-                )
+                belongs = not channel.is_private or key in c_owners or key in c_members
 
                 if belongs:
                     if key in c_owners:
@@ -642,8 +638,7 @@ class MattermostRecordService:
             else None
         )
         anonymizer = AnonymizerPipeline(
-            usernames=usernames if self._config.anonymize else [],
-            salt=salt
+            usernames=usernames if self._config.anonymize else [], salt=salt
         )
         post_entries: list[tuple[int, PostRecord, str]] = []
         parent_map: dict[str, str] = {}
@@ -752,10 +747,13 @@ class MattermostRecordService:
         input_dir = self._config.input_path.parent
         output_dir = self._config.output_path.parent / "attachments"
         usernames = list(self._user_slug_map.keys())
-        salt = self._config.anonymize_salt.get_secret_value().encode("utf-8") if self._config.anonymize else None
+        salt = (
+            self._config.anonymize_salt.get_secret_value().encode("utf-8")
+            if self._config.anonymize
+            else None
+        )
         anonymizer = AnonymizerPipeline(
-            usernames=usernames if self._config.anonymize else [],
-            salt=salt
+            usernames=usernames if self._config.anonymize else [], salt=salt
         )
 
         for dc in source.iter_direct_channels():

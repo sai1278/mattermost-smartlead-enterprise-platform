@@ -1,0 +1,46 @@
+name: Enterprise Platform CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Monorepo Workspace Packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest ruff mypy httpx pydantic pydantic-settings fastapi uvicorn
+          pip install -e packages/integrations/shared
+          pip install -e packages/integrations/mattermost
+          pip install -e packages/integrations/smartlead
+          pip install -e packages/integrations/clickhouse
+          pip install -e packages/integrations/flowable
+          pip install -e apps/smartlead-sync
+          pip install -e apps/command-handler
+          pip install -e apps/bot
+          pip install -e apps/analytics
+          pip install -e apps/workflow-engine
+          pip install -e apps/parser
+
+      - name: Run Ruff Linter & Formatter Check
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run Mypy Strict Type Analysis
+        run: |
+          mypy packages/integrations/*/src apps/*/src
+
+      - name: Run Monorepo Pytest Suite
+        run: |
+          python scratch/run_all_tests.py

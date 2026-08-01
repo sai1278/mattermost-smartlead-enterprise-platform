@@ -160,6 +160,17 @@ def main() -> int:
     setup_telemetry(config.otel_service_name)
 
     result = build_pipeline(config).run()
+
+    # Package JSONL and attachments into Mattermost import ZIP package
+    from .application.packager import create_import_package
+
+    _ = create_import_package(config.output_path)
+
+    # Validate that all referenced attachments exist on disk and are readable
+    from .application.attachment_validator import validate_import_attachments
+
+    validate_import_attachments(config.output_path, raise_on_error=True)
+
     LOGGER.info(
         "transformation completed",
         extra={

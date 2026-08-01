@@ -24,6 +24,7 @@ def _config(tmp_path: Path) -> ParserConfig:
         metrics_output_path=tmp_path / "metrics" / "parser.prom",
     )
 
+
 def test_lazy_memberships_mapping_interface() -> None:
     # Set up mock input data for _LazyMemberships
     user_to_teams = {"user-1": {"team-1"}, "user-2": {"team-1", "team-2"}}
@@ -40,7 +41,7 @@ def test_lazy_memberships_mapping_interface() -> None:
         ],
         "team-2": [
             ChannelRecord(name="random", display_name="Random", is_private=False),
-        ]
+        ],
     }
     channel_members = {("team-1", "private-c"): {"user-1"}}
     channel_owners: dict[tuple[str, str], set[str]] = {("team-1", "private-c"): set()}
@@ -87,6 +88,7 @@ def test_lazy_memberships_mapping_interface() -> None:
     assert "general" in user2_info["teams"]["team-1"]["channels"]
     assert "private-c" not in user2_info["teams"]["team-1"]["channels"]
 
+
 def test_lazy_memberships_large_scale_benchmark(tmp_path: Path) -> None:
     # Test that we can generate membership records for large organizations efficiently
     user_count = 1000
@@ -117,7 +119,7 @@ def test_lazy_memberships_large_scale_benchmark(tmp_path: Path) -> None:
                     members=[f"user-{t}"],
                 )
                 for c in range(channels_per_team)
-            ]
+            ],
         )
         for t in range(team_count)
     ]

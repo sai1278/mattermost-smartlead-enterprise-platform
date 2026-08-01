@@ -66,12 +66,8 @@ class MigrationCheckpoint:
             checkpoint.completed_teams = set(data.get("completed_teams", []))
             checkpoint.completed_channels = set(data.get("completed_channels", []))
             checkpoint.completed_users = set(data.get("completed_users", []))
-            checkpoint.completed_direct_channels = set(
-                data.get("completed_direct_channels", [])
-            )
-            checkpoint.completed_posts_channels = set(
-                data.get("completed_posts_channels", [])
-            )
+            checkpoint.completed_direct_channels = set(data.get("completed_direct_channels", []))
+            checkpoint.completed_posts_channels = set(data.get("completed_posts_channels", []))
             checkpoint.completed_posts_direct_channels = set(
                 data.get("completed_posts_direct_channels", [])
             )
@@ -181,9 +177,7 @@ class TransformationPipeline:
     def run(self) -> PipelineResult:
         self._shutdown_requested = False
 
-        def handle_signal(
-            signum: int, frame: types.FrameType | None
-        ) -> None:
+        def handle_signal(signum: int, frame: types.FrameType | None) -> None:
             LOGGER.warning(f"Received signal {signum}, requesting graceful shutdown...")
             self._shutdown_requested = True
 
@@ -224,9 +218,7 @@ class TransformationPipeline:
                                 extra={
                                     "event": "resume_reset",
                                     "details": {
-                                        "checkpoint_path": str(
-                                            self._config.checkpoint_path
-                                        )
+                                        "checkpoint_path": str(self._config.checkpoint_path)
                                     },
                                 },
                             )
@@ -348,10 +340,7 @@ class TransformationPipeline:
                     last_ids = checkpoint.last_channel_post_ids.get(chan_key, set())
                     if post["create_at"] < last_ts:
                         continue
-                    if (
-                        post["create_at"] == last_ts
-                        and post["id"] in last_ids
-                    ):
+                    if post["create_at"] == last_ts and post["id"] in last_ids:
                         continue
                 elif rec_type == "direct_channel":
                     members_key = ",".join(sorted(record["direct_channel"]["members"]))
@@ -366,10 +355,7 @@ class TransformationPipeline:
                     last_ids = checkpoint.last_direct_channel_post_ids.get(members_key, set())
                     if dpost["create_at"] < last_ts:
                         continue
-                    if (
-                        dpost["create_at"] == last_ts
-                        and dpost["id"] in last_ids
-                    ):
+                    if dpost["create_at"] == last_ts and dpost["id"] in last_ids:
                         continue
 
             self._writer.write_record(record)
@@ -417,9 +403,7 @@ class TransformationPipeline:
                     members_key = ",".join(sorted(record["direct_post"]["channel_members"]))
 
                     if active_direct_channel_key and active_direct_channel_key != members_key:
-                        checkpoint.completed_posts_direct_channels.add(
-                            active_direct_channel_key
-                        )
+                        checkpoint.completed_posts_direct_channels.add(active_direct_channel_key)
                     active_direct_channel_key = members_key
 
                     if members_key not in checkpoint.last_direct_channel_post_timestamps:
@@ -434,9 +418,9 @@ class TransformationPipeline:
                         checkpoint.last_direct_channel_post_ids[members_key].add(dpost_id)
 
                     checkpoint.last_direct_post_timestamp = dpost_ts
-                    checkpoint.last_direct_post_ids = (
-                        checkpoint.last_direct_channel_post_ids[members_key]
-                    )
+                    checkpoint.last_direct_post_ids = checkpoint.last_direct_channel_post_ids[
+                        members_key
+                    ]
 
                 checkpoint.stats[rec_type] = checkpoint.stats.get(rec_type, 0) + 1
                 if records_written % self._config.batch_size == 0:

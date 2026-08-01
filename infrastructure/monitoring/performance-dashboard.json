@@ -1,0 +1,27 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "TMMP Enterprise Platform Performance & Chaos Dashboard",
+    "panels": [
+      {
+        "title": "Throughput (Req/Sec)",
+        "type": "graph",
+        "targets": [{ "expr": "sum(rate(http_requests_total[1m]))" }]
+      },
+      {
+        "title": "Latency Percentiles (p50, p95, p99)",
+        "type": "graph",
+        "targets": [
+          { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))" },
+          { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))" },
+          { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))" }
+        ]
+      },
+      {
+        "title": "Circuit Breaker State (0=Closed, 1=Open, 2=HalfOpen)",
+        "type": "singlestat",
+        "targets": [{ "expr": "tmmp_circuit_breaker_state" }]
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: smartlead-sync-pod-kill
+  namespace: tmmp-platform
+spec:
+  action: pod-failure
+  mode: one
+  duration: '30s'
+  selector:
+    namespaces:
+      - tmmp-platform
+    labelSelectors:
+      'app': 'tmmp-smartlead-sync'
+  scheduler:
+    cron: '*/5 * * * *'
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: platform-network-latency-injection
+  namespace: tmmp-platform
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - tmmp-platform
+  delay:
+    latency: '150ms'
+    jitter: '25ms'
+    correlation: '25'
+  direction: to
+  duration: '1m'
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: platform-packet-loss-injection
+  namespace: tmmp-platform
+spec:
+  action: loss
+  mode: fixed
+  selector:
+    namespaces:
+      - tmmp-platform
+  loss:
+    loss: '10'
+  duration: '45s'

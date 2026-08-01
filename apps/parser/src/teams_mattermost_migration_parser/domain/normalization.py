@@ -22,7 +22,6 @@ def slugify(value: str) -> str:
     return slug
 
 
-
 def stable_alias(value: str, salt: bytes | None = None) -> str:
     """Generate a deterministic alias for anonymized identities."""
     if salt is None:

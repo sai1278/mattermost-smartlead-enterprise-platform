@@ -61,13 +61,15 @@ def test_readers_missing_file_gateway(tmp_path: Path) -> None:
 def test_readers_unsupported_schema_version(tmp_path: Path) -> None:
     bad_schema_file = tmp_path / "unsupported_schema.json"
     bad_schema_file.write_text(
-        json.dumps({
-            "schema_version": 2,
-            "users": [],
-            "teams": [],
-            "direct_channels": [],
-        }),
-        encoding="utf-8"
+        json.dumps(
+            {
+                "schema_version": 2,
+                "users": [],
+                "teams": [],
+                "direct_channels": [],
+            }
+        ),
+        encoding="utf-8",
     )
     gateway = TeamsExportFileGateway(bad_schema_file)
     with pytest.raises(InputValidationError, match="Unsupported schema version: 2"):
@@ -77,18 +79,20 @@ def test_readers_unsupported_schema_version(tmp_path: Path) -> None:
 def test_readers_schema_invalid_user_item(tmp_path: Path) -> None:
     invalid_item_file = tmp_path / "invalid_item.json"
     invalid_item_file.write_text(
-        json.dumps({
-            "schema_version": 1,
-            "users": [
-                {
-                    "username": "missing-email-and-teams"
-                    # missing required email/teams/nickname will cause ValidationError
-                }
-            ],
-            "teams": [],
-            "direct_channels": [],
-        }),
-        encoding="utf-8"
+        json.dumps(
+            {
+                "schema_version": 1,
+                "users": [
+                    {
+                        "username": "missing-email-and-teams"
+                        # missing required email/teams/nickname will cause ValidationError
+                    }
+                ],
+                "teams": [],
+                "direct_channels": [],
+            }
+        ),
+        encoding="utf-8",
     )
     gateway = TeamsExportFileGateway(invalid_item_file)
     with pytest.raises(InputValidationError, match="invalid object in 'users.item'"):
@@ -147,7 +151,7 @@ def test_jsonl_writer_part_rotation_and_resumption(tmp_path: Path) -> None:
 
     part1_lines = new_part1.read_text(encoding="utf-8").splitlines()
     assert len(part1_lines) == 1
-    assert "large_payload" not in part1_lines[0] # it has the first large record
+    assert "large_payload" not in part1_lines[0]  # it has the first large record
 
     part2_lines = new_part2.read_text(encoding="utf-8").splitlines()
     # Part 2 should contain version record first, then the second record
@@ -250,7 +254,7 @@ def test_pipeline_checkpoint_fine_grained_skipping(tmp_path: Path) -> None:
     # Compute expected hashed ID for post 2:
     # team: "it-team", channel: "general", post.id (which is source_key): "p2"
     payload = "it-team|general|p2"
-    salt = "default-anonymization-salt-value".encode("utf-8")
+    salt = b"default-anonymization-salt-value"
     p2_digest = hmac.new(salt, payload.encode("utf-8"), hashlib.sha256).hexdigest()[:12]
     p2_hashed_id = f"post-{p2_digest}"
 
@@ -266,21 +270,38 @@ def test_pipeline_checkpoint_fine_grained_skipping(tmp_path: Path) -> None:
     class _InMemorySource:
         def __init__(self, e: TeamsExport) -> None:
             self._e = e
-        def iter_teams(self) -> Any: return iter(self._e.teams)
-        def iter_users(self) -> Any: return iter(self._e.users)
-        def iter_direct_channels(self) -> Any: return iter(self._e.direct_channels)
-        def input_size_bytes(self) -> int: return 123
-        def materialize(self) -> TeamsExport: return self._e
-        def validate_schema_version(self) -> None: pass
+
+        def iter_teams(self) -> Any:
+            return iter(self._e.teams)
+
+        def iter_users(self) -> Any:
+            return iter(self._e.users)
+
+        def iter_direct_channels(self) -> Any:
+            return iter(self._e.direct_channels)
+
+        def input_size_bytes(self) -> int:
+            return 123
+
+        def materialize(self) -> TeamsExport:
+            return self._e
+
+        def validate_schema_version(self) -> None:
+            pass
 
     class _CollectingWriter:
         def __init__(self) -> None:
             self.records: list[dict[str, Any]] = []
             self.has_existing_content = True
+
         def write_record(self, record: Mapping[str, Any]) -> None:
             self.records.append(dict(record))
-        def flush(self) -> None: pass
-        def close(self) -> None: pass
+
+        def flush(self) -> None:
+            pass
+
+        def close(self) -> None:
+            pass
 
     writer = _CollectingWriter()
     pipeline = TransformationPipeline(
@@ -306,9 +327,7 @@ def test_pipeline_checkpoint_fine_grained_skipping(tmp_path: Path) -> None:
     # - "r1" (ts 4000) on "random" channel -> WRITTEN
     # - "d1" (ts 1000) on direct channel -> WRITTEN
 
-    post_messages = [
-        rec["post"]["message"] for rec in writer.records if rec.get("type") == "post"
-    ]
+    post_messages = [rec["post"]["message"] for rec in writer.records if rec.get("type") == "post"]
     assert "post 1" not in post_messages
     assert "post 2" not in post_messages
     assert "post 3" in post_messages
@@ -394,8 +413,8 @@ def test_services_concurrent_attachment_download_failure(
 
 
 def test_attachment_download_enforces_ssl(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import urllib.request
     import ssl
+    import urllib.request
 
     config = _config(tmp_path)
     service = MattermostRecordService(config)
@@ -405,10 +424,12 @@ def test_attachment_download_enforces_ssl(tmp_path: Path, monkeypatch: pytest.Mo
     called_timeout = None
 
     class MockResponse:
-        def __enter__(self) -> "MockResponse":
+        def __enter__(self) -> MockResponse:
             return self
+
         def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
             pass
+
         def read(self, n: int = -1) -> bytes:
             return b""
 
@@ -493,4 +514,3 @@ def test_validation_rejects_under_arity_dm(tmp_path: Path) -> None:
         validator.validate(export)
 
     assert "direct channel has invalid member count: 1 (minimum 2 required)" in str(exc_info.value)
-

@@ -1,3 +1,9 @@
+[tool.uv.workspace]
+members = [
+  "apps/*",
+  "packages/integrations/*",
+]
+
 [tool.pytest.ini_options]
 addopts = "-ra --cov=teams_mattermost_migration_parser --cov-report=term-missing"
 testpaths = [

@@ -18,6 +18,7 @@ def build_pipeline(config: ParserConfig) -> TransformationPipeline:
     val_str = str(config.input_path).lower()
     if val_str in {"ms-graph", "graph"} or val_str.startswith("graph://"):
         from .infrastructure.ms_graph_reader import MSGraphExportSource
+
         source = MSGraphExportSource(config)
     else:
         source = TeamsExportFileGateway(config.input_path)
@@ -31,7 +32,7 @@ def build_pipeline(config: ParserConfig) -> TransformationPipeline:
         config.output_path,
         batch_size=config.batch_size,
         append=resume_append,
-        max_chunk_mb=config.max_chunk_mb
+        max_chunk_mb=config.max_chunk_mb,
     )
 
     return TransformationPipeline(

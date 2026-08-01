@@ -115,4 +115,23 @@ format:
 	ruff format apps/parser/src apps/parser/tests tests
 	shfmt -w scripts
 
+workspace-info:
+	@printf "%s\n" "Workspace Members:" \
+	  "  - apps/parser (ETL CLI)" \
+	  "  - apps/bot" \
+	  "  - apps/command-handler" \
+	  "  - apps/smartlead-sync" \
+	  "  - apps/analytics" \
+	  "  - apps/workflow-engine" \
+	  "  - packages/integrations/shared" \
+	  "  - packages/integrations/mattermost" \
+	  "  - packages/integrations/smartlead" \
+	  "  - packages/integrations/clickhouse" \
+	  "  - packages/integrations/flowable"
+
+workspace-boundaries:
+	@echo "Verifying boundary isolation for apps/parser..."
+	@! grep -rn "packages" apps/parser/src/ && echo "PASS: apps/parser has zero dependencies on packages/integrations"
+
 ci: lint coverage security
+

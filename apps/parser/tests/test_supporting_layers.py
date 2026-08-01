@@ -351,7 +351,7 @@ def test_pipeline_failure_marks_metrics_and_closes_writer(tmp_path: Path) -> Non
         source=_MinimalSource(export),
         validator=_FailingValidator(config),
         # pyrefly: ignore [bad-argument-type]
-        writer=writer
+        writer=writer,
     )
 
     with pytest.raises(InputValidationError):

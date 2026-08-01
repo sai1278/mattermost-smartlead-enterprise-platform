@@ -1,10 +1,9 @@
 import json
 import logging
-import urllib.request
 import urllib.parse
+import urllib.request
 from collections.abc import Iterator
 from typing import Any
-from pathlib import Path
 
 from ..config import ParserConfig
 from ..domain.exceptions import SourceReadError
@@ -28,8 +27,12 @@ class MSGraphExportSource:
         self.config = config
         self.tenant_id = config.ms_graph_tenant_id or "common"
         self.client_id = config.ms_graph_client_id
-        self.client_secret = config.ms_graph_client_secret.get_secret_value() if config.ms_graph_client_secret else None
-        
+        self.client_secret = (
+            config.ms_graph_client_secret.get_secret_value()
+            if config.ms_graph_client_secret
+            else None
+        )
+
         # In-memory cache to support materialize() and caching teams/users mapping
         self._users: list[UserRecord] = []
         self._teams: list[TeamRecord] = []
@@ -45,12 +48,14 @@ class MSGraphExportSource:
             raise SourceReadError("MS Graph client_id and client_secret must be configured")
 
         token_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
-        data = urllib.parse.urlencode({
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "grant_type": "client_credentials",
-            "scope": "https://graph.microsoft.com/.default"
-        }).encode("utf-8")
+        data = urllib.parse.urlencode(
+            {
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "grant_type": "client_credentials",
+                "scope": "https://graph.microsoft.com/.default",
+            }
+        ).encode("utf-8")
 
         req = urllib.request.Request(token_url, data=data)
         try:
@@ -64,11 +69,14 @@ class MSGraphExportSource:
     def _api_get(self, url: str) -> dict[str, Any]:
         """Perform an authenticated GET request to the MS Graph API."""
         token = self._get_access_token()
-        req = urllib.request.Request(url, headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/json",
-            "User-Agent": "TMMP-Parser/1.0"
-        })
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+                "User-Agent": "TMMP-Parser/1.0",
+            },
+        )
         try:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 result: dict[str, Any] = json.loads(resp.read().decode("utf-8"))
@@ -92,9 +100,12 @@ class MSGraphExportSource:
 
         # 1. Fetch Users
         users_raw = self._api_get_all("https://graph.microsoft.com/v1.0/users")
-        
+
         # 2. Fetch Teams (Groups backed by Teams)
-        groups_url = "https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/any(x:x eq 'Team')"
+        groups_url = (
+            "https://graph.microsoft.com/v1.0/groups"
+            "?$filter=resourceProvisioningOptions/any(x:x eq 'Team')"
+        )
         teams_raw = self._api_get_all(groups_url)
 
         # User to teams membership mapping
@@ -108,7 +119,9 @@ class MSGraphExportSource:
             description = team_data.get("description") or ""
 
             # Fetch owners
-            owners_raw = self._api_get_all(f"https://graph.microsoft.com/v1.0/groups/{team_id}/owners")
+            owners_raw = self._api_get_all(
+                f"https://graph.microsoft.com/v1.0/groups/{team_id}/owners"
+            )
             owners = []
             for owner in owners_raw:
                 upn = owner.get("userPrincipalName")
@@ -118,7 +131,9 @@ class MSGraphExportSource:
                     user_teams.setdefault(username, []).append(team_name)
 
             # Fetch members
-            members_raw = self._api_get_all(f"https://graph.microsoft.com/v1.0/groups/{team_id}/members")
+            members_raw = self._api_get_all(
+                f"https://graph.microsoft.com/v1.0/groups/{team_id}/members"
+            )
             members = []
             for member in members_raw:
                 upn = member.get("userPrincipalName")
@@ -128,7 +143,9 @@ class MSGraphExportSource:
                     user_teams.setdefault(username, []).append(team_name)
 
             # Fetch channels
-            channels_raw = self._api_get_all(f"https://graph.microsoft.com/v1.0/teams/{team_id}/channels")
+            channels_raw = self._api_get_all(
+                f"https://graph.microsoft.com/v1.0/teams/{team_id}/channels"
+            )
             channels = []
             for chan in channels_raw:
                 chan_id = chan["id"]
@@ -136,7 +153,9 @@ class MSGraphExportSource:
                 is_private = chan.get("membershipType") == "private"
 
                 # Fetch channel messages
-                msg_url = f"https://graph.microsoft.com/v1.0/teams/{team_id}/channels/{chan_id}/messages"
+                msg_url = (
+                    f"https://graph.microsoft.com/v1.0/teams/{team_id}/channels/{chan_id}/messages"
+                )
                 messages_raw = self._api_get_all(msg_url)
                 posts = []
                 for msg in messages_raw:
@@ -146,10 +165,11 @@ class MSGraphExportSource:
                     if not author_upn:
                         continue
                     author = author_upn.split("@")[0]
-                    
+
                     created_at_str: str | None = msg.get("createdDateTime")
                     try:
                         from datetime import datetime
+
                         if created_at_str is None:
                             raise ValueError("missing createdDateTime")
                         dt = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
@@ -158,42 +178,50 @@ class MSGraphExportSource:
                         timestamp_ms = 0
 
                     body = msg.get("body", {}).get("content") or ""
-                    
+
                     # Fetch attachments
                     attachments = []
                     for att in msg.get("attachments", []):
-                        attachments.append(AttachmentRecord(
-                            name=att.get("name") or "file",
-                            path=att.get("name") or "file",
-                            url=att.get("contentUrl")
-                        ))
+                        attachments.append(
+                            AttachmentRecord(
+                                name=att.get("name") or "file",
+                                path=att.get("name") or "file",
+                                url=att.get("contentUrl"),
+                            )
+                        )
 
-                    posts.append(PostRecord(
-                        id=msg_id,
-                        username=author,
-                        message=body,
-                        timestamp_ms=timestamp_ms,
-                        parent_id=msg.get("replyToId"),
-                        attachments=tuple(attachments)
-                    ))
+                    posts.append(
+                        PostRecord(
+                            id=msg_id,
+                            username=author,
+                            message=body,
+                            timestamp_ms=timestamp_ms,
+                            parent_id=msg.get("replyToId"),
+                            attachments=tuple(attachments),
+                        )
+                    )
 
-                channels.append(ChannelRecord(
-                    name=chan_name,
-                    display_name=chan_name,
-                    is_private=is_private,
-                    posts=tuple(posts),
+                channels.append(
+                    ChannelRecord(
+                        name=chan_name,
+                        display_name=chan_name,
+                        is_private=is_private,
+                        posts=tuple(posts),
+                        members=tuple(members),
+                        owners=tuple(owners),
+                    )
+                )
+
+            self._teams.append(
+                TeamRecord(
+                    name=team_name,
+                    display_name=display_name,
+                    description=description,
+                    channels=tuple(channels),
                     members=tuple(members),
-                    owners=tuple(owners)
-                ))
-
-            self._teams.append(TeamRecord(
-                name=team_name,
-                display_name=display_name,
-                description=description,
-                channels=tuple(channels),
-                members=tuple(members),
-                owners=tuple(owners)
-            ))
+                    owners=tuple(owners),
+                )
+            )
 
         # Build UserRecords
         self._users = []
@@ -205,22 +233,21 @@ class MSGraphExportSource:
             email = user_data.get("mail") or upn
             nickname = user_data.get("displayName") or username
             teams_joined = tuple(sorted(list(set(user_teams.get(username, [])))))
-            
-            self._users.append(UserRecord(
-                username=username,
-                email=email,
-                nickname=nickname,
-                teams=teams_joined
-            ))
+
+            self._users.append(
+                UserRecord(username=username, email=email, nickname=nickname, teams=teams_joined)
+            )
 
         # 3. Fetch Chats (Direct Message channels)
         chats_raw = self._api_get_all("https://graph.microsoft.com/v1.0/chats")
         self._direct_channels = []
         for chat_data in chats_raw:
             chat_id = chat_data["id"]
-            
+
             # Fetch members
-            chat_members_raw = self._api_get_all(f"https://graph.microsoft.com/v1.0/chats/{chat_id}/members")
+            chat_members_raw = self._api_get_all(
+                f"https://graph.microsoft.com/v1.0/chats/{chat_id}/members"
+            )
             chat_members = []
             for member in chat_members_raw:
                 upn = member.get("userPrincipalName") or member.get("email")
@@ -231,7 +258,9 @@ class MSGraphExportSource:
                 continue
 
             # Fetch messages
-            chat_messages_raw = self._api_get_all(f"https://graph.microsoft.com/v1.0/chats/{chat_id}/messages")
+            chat_messages_raw = self._api_get_all(
+                f"https://graph.microsoft.com/v1.0/chats/{chat_id}/messages"
+            )
             posts = []
             for msg in chat_messages_raw:
                 msg_id = msg.get("id")
@@ -244,6 +273,7 @@ class MSGraphExportSource:
                 created_at_str = msg.get("createdDateTime")
                 try:
                     from datetime import datetime
+
                     if created_at_str is None:
                         raise ValueError("missing createdDateTime")
                     dt = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
@@ -252,27 +282,30 @@ class MSGraphExportSource:
                     timestamp_ms = 0
 
                 body = msg.get("body", {}).get("content") or ""
-                
+
                 attachments = []
                 for att in msg.get("attachments", []):
-                    attachments.append(AttachmentRecord(
-                        name=att.get("name") or "file",
-                        path=att.get("name") or "file",
-                        url=att.get("contentUrl")
-                    ))
+                    attachments.append(
+                        AttachmentRecord(
+                            name=att.get("name") or "file",
+                            path=att.get("name") or "file",
+                            url=att.get("contentUrl"),
+                        )
+                    )
 
-                posts.append(PostRecord(
-                    id=msg_id,
-                    username=author,
-                    message=body,
-                    timestamp_ms=timestamp_ms,
-                    attachments=tuple(attachments)
-                ))
+                posts.append(
+                    PostRecord(
+                        id=msg_id,
+                        username=author,
+                        message=body,
+                        timestamp_ms=timestamp_ms,
+                        attachments=tuple(attachments),
+                    )
+                )
 
-            self._direct_channels.append(DirectChannelRecord(
-                members=tuple(chat_members),
-                posts=tuple(posts)
-            ))
+            self._direct_channels.append(
+                DirectChannelRecord(members=tuple(chat_members), posts=tuple(posts))
+            )
 
         self._fetched = True
 

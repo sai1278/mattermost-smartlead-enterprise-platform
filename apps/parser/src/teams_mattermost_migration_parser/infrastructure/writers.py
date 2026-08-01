@@ -53,12 +53,9 @@ class JsonlFileWriter:
                     seek_pos = max(0, existing - 4096)
                     f.seek(seek_pos)
                     chunk = f.read()
-                    if chunk and chunk[-1] != ord('\n'):
-                        last_nl = chunk.rfind(b'\n')
-                        if last_nl != -1:
-                            truncate_pos = seek_pos + last_nl + 1
-                        else:
-                            truncate_pos = seek_pos
+                    if chunk and chunk[-1] != ord("\n"):
+                        last_nl = chunk.rfind(b"\n")
+                        truncate_pos = seek_pos + last_nl + 1 if last_nl != -1 else seek_pos
                         f.seek(truncate_pos)
                         f.truncate()
                         existing = truncate_pos
@@ -89,10 +86,7 @@ class JsonlFileWriter:
             buffer_bytes = len(buffer_content.encode("utf-8"))
 
             max_bytes = self._max_chunk_mb * 1024 * 1024
-            if (
-                self._current_file_bytes > 0
-                and self._current_file_bytes + buffer_bytes > max_bytes
-            ):
+            if self._current_file_bytes > 0 and self._current_file_bytes + buffer_bytes > max_bytes:
                 self._handle.close()
                 self._part_number += 1
                 self._current_path = self._get_part_path(self._part_number)

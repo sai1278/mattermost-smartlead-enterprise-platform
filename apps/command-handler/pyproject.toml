@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "teams-mattermost-migration-command-handler"
+version = "0.1.0"
+description = "Mattermost Slash Command Handler Microservice"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "tmmp-integrations-shared",
+    "tmmp-integrations-mattermost",
+    "tmmp-integrations-smartlead",
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.7.0",
+    "python-multipart>=0.0.9",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+tmmp_command_handler = ["py.typed"]

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
 import time
 from pathlib import Path
+
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -105,7 +105,7 @@ def test_mattermost_import_end_to_end(tmp_path: Path) -> None:
 
         assert healthy, "Mattermost container did not become healthy in time"
 
-        # Copy output_path to Mattermost container and run import
+        # Copy output_path and attachments directory to Mattermost container
         subprocess.run(
             [
                 "docker",
@@ -115,6 +115,17 @@ def test_mattermost_import_end_to_end(tmp_path: Path) -> None:
             ],
             check=True,
         )
+        attachments_dir = output_path.parent / "attachments"
+        if attachments_dir.exists():
+            subprocess.run(
+                [
+                    "docker",
+                    "cp",
+                    str(attachments_dir),
+                    "teams-mattermost-migration-mattermost-1:/tmp/attachments",
+                ],
+                check=True,
+            )
 
         # Run bulk import command
         import_res = subprocess.run(
@@ -234,7 +245,7 @@ def test_mattermost_import_idempotency(tmp_path: Path) -> None:
 
         assert healthy, "Mattermost container did not become healthy in time"
 
-        # Copy output_path to Mattermost container and run import
+        # Copy output_path and attachments directory to Mattermost container
         subprocess.run(
             [
                 "docker",
@@ -244,6 +255,17 @@ def test_mattermost_import_idempotency(tmp_path: Path) -> None:
             ],
             check=True,
         )
+        attachments_dir = output_path.parent / "attachments"
+        if attachments_dir.exists():
+            subprocess.run(
+                [
+                    "docker",
+                    "cp",
+                    str(attachments_dir),
+                    "teams-mattermost-migration-mattermost-1:/tmp/attachments",
+                ],
+                check=True,
+            )
 
         # Run bulk import command first time
         import_res = subprocess.run(
@@ -324,7 +346,16 @@ def test_mattermost_import_idempotency(tmp_path: Path) -> None:
                 "-d",
                 docker_env.get("POSTGRES_DB", "mattermost"),
                 "-c",
-                "DELETE FROM posts WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY substring(props from '\"import_id\"\\s*:\\s*\"([^\"]+)\"') ORDER BY createat ASC, id ASC) as rn FROM posts) t WHERE rn > 1);",
+                (
+                    "DELETE FROM posts WHERE id IN ("
+                    "SELECT id FROM ("
+                    "SELECT id, ROW_NUMBER() OVER ("
+                    'PARTITION BY substring(props from \'"import_id"\\s*:\\s*"([^"]+)"\') '
+                    "ORDER BY createat ASC, id ASC"
+                    ") as rn FROM posts"
+                    ") t WHERE rn > 1"
+                    ");"
+                ),
             ],
             check=True,
             cwd=str(COMPOSE_DIR),
@@ -374,3 +405,22 @@ def test_mattermost_import_idempotency(tmp_path: Path) -> None:
             cwd=str(COMPOSE_DIR),
             env=docker_env,
         )
+
+
+def test_attachment_validation_fails_on_missing_attachment(tmp_path: Path) -> None:
+    from teams_mattermost_migration_parser.application.attachment_validator import (
+        validate_import_attachments,
+    )
+    from teams_mattermost_migration_parser.domain.exceptions import AttachmentMissingError
+
+    jsonl_file = tmp_path / "payload.jsonl"
+    jsonl_file.write_text(
+        '{"type": "post", "post": {"team": "t", "channel": "c", "user": "u", '
+        '"attachments": [{"path": "attachments/missing.png"}]}}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AttachmentMissingError) as exc_info:
+        validate_import_attachments(jsonl_file, raise_on_error=True)
+
+    assert "missing.png" in str(exc_info.value)

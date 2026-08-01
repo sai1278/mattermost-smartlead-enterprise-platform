@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "teams-mattermost-migration-bot"
+version = "0.1.0"
+description = "Mattermost WebSocket Bot Microservice"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "tmmp-integrations-shared",
+    "tmmp-integrations-mattermost",
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+tmmp_mattermost_bot = ["py.typed"]

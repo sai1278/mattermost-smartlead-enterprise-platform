@@ -116,4 +116,3 @@ class TeamsExportFileGateway:
     def validate_schema_version(self) -> None:
         """Fail-fast if the export declares an unsupported schema version."""
         self._parse_if_needed()
-

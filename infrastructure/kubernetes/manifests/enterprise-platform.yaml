@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tmmp-platform
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tmmp-command-handler
+  namespace: tmmp-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tmmp-command-handler
+  template:
+    metadata:
+      labels:
+        app: tmmp-command-handler
+    spec:
+      containers:
+        - name: command-handler
+          image: tmmp/command-handler:latest
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tmmp-command-handler-svc
+  namespace: tmmp-platform
+spec:
+  selector:
+    app: tmmp-command-handler
+  ports:
+    - port: 8000
+      targetPort: 8000

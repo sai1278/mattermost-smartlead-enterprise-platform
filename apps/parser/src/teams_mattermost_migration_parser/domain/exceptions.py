@@ -17,3 +17,7 @@ class SourceReadError(ParserError):
 
 class InputValidationError(ParserError):
     """Raised when the input export fails structural validation."""
+
+
+class AttachmentMissingError(ParserError):
+    """Raised when one or more referenced attachments are missing or unreadable."""

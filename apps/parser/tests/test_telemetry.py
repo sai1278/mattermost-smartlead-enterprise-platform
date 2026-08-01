@@ -65,7 +65,7 @@ def test_opentelemetry_pipeline_spans(tmp_path: Path) -> None:
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
-    
+
     orig_provider = getattr(trace, "_TRACER_PROVIDER", None)
     trace._TRACER_PROVIDER = provider
 
@@ -100,7 +100,7 @@ def test_opentelemetry_pipeline_spans(tmp_path: Path) -> None:
 
     # Retrieve and verify spans
     spans = exporter.get_finished_spans()
-    
+
     # We expect spans: schema_version_check, validation,
     # render_and_write, and migration_pipeline_run (parent)
     span_names = {span.name for span in spans}

@@ -1,0 +1,143 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tmmp-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: tmmp-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  flowable:
+    image: flowable/flowable-rest:latest
+    container_name: tmmp-flowable
+    ports:
+      - "8080:8080"
+    environment:
+      - FLOWABLE_REST_APP_ADMIN_USER-ID=admin
+      - FLOWABLE_REST_APP_ADMIN_PASSWORD=test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/flowable-rest/service/management/engine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    container_name: tmmp-mattermost
+    ports:
+      - "8065:8065"
+    environment:
+      - MM_SERVICESETTINGS_SITEURL=http://localhost:8065
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8065/api/v4/system/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  smartlead-sync:
+    build:
+      context: .
+      dockerfile: apps/smartlead-sync/Dockerfile
+    container_name: tmmp-smartlead-sync
+    ports:
+      - "8001:8001"
+    environment:
+      - SMARTLEAD_SYNC_PORT=8001
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  command-handler:
+    build:
+      context: .
+      dockerfile: apps/command-handler/Dockerfile
+    container_name: tmmp-command-handler
+    ports:
+      - "8000:8000"
+    environment:
+      - COMMAND_HANDLER_PORT=8000
+
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    container_name: tmmp-bot
+    ports:
+      - "8002:8002"
+    environment:
+      - BOT_SERVICE_PORT=8002
+      - MATTERMOST_WS_URL=ws://mattermost:8065
+    depends_on:
+      mattermost:
+        condition: service_healthy
+
+  analytics:
+    build:
+      context: .
+      dockerfile: apps/analytics/Dockerfile
+    container_name: tmmp-analytics
+    ports:
+      - "8003:8003"
+    environment:
+      - ANALYTICS_PORT=8003
+      - CLICKHOUSE_URL=http://clickhouse:8123
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  workflow-engine:
+    build:
+      context: .
+      dockerfile: apps/workflow-engine/Dockerfile
+    container_name: tmmp-workflow-engine
+    ports:
+      - "8004:8004"
+    environment:
+      - WORKFLOW_ENGINE_PORT=8004
+      - FLOWABLE_URL=http://flowable:8080/flowable-rest
+    depends_on:
+      flowable:
+        condition: service_healthy
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: tmmp-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./infrastructure/monitoring/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tmmp-prometheus
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tmmp-grafana
+    ports:
+      - "3000:3000"
